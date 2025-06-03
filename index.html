@@ -325,6 +325,17 @@
                 explanation: "Depuis PHP 8, Symfony utilise les attributs PHP avec la syntaxe #[Route]. L'ancienne syntaxe @Route est dépréciée."
             },
             {
+                question: "Que se passe-t-il si aucune ligne de panier n'existe pour un produit?",
+                options: [
+                    "Une erreur est générée",
+                    "Le produit est ignoré",
+                    "Un nouvel objet Panier est créé avec les associations nécessaires",
+                    "L'utilisateur est redirigé"
+                ],
+                correct: 2,
+                explanation: "Si aucune ligne n'existe, on crée un nouvel objet Panier et on définit l'utilisateur, le produit et la quantité avant de persister."
+            },
+            {
                 question: "Que fait la méthode getUser() dans un contrôleur Symfony?",
                 options: [
                     "Crée un nouvel utilisateur",
@@ -408,6 +419,17 @@
                 explanation: "L'en-tête HTTP correct est 'referer' (avec deux 'e'). C'est une faute d'orthographe historique dans le protocole HTTP."
             },
             {
+                question: "Quelle méthode utilise-t-on pour afficher un message flash en Symfony?",
+                options: [
+                    "$this->flash()",
+                    "$this->addFlash()",
+                    "$this->setFlash()",
+                    "$this->createFlash()"
+                ],
+                correct: 1,
+                explanation: "addFlash() permet d'ajouter un message flash qui sera affiché une seule fois à l'utilisateur, généralement après une action."
+            },
+            {
                 question: "Que fait $request->query->get('quantite', 1)?",
                 options: [
                     "Récupère la quantité depuis l'URL avec 1 comme valeur par défaut",
@@ -419,15 +441,26 @@
                 explanation: "$request->query accède aux paramètres GET de l'URL. Le second paramètre (1) est la valeur par défaut."
             },
             {
-                question: "Pourquoi utilise-t-on AbstractController?",
+                question: "Pourquoi utilise-t-on persist() uniquement dans le else?",
                 options: [
-                    "Pour la décoration",
-                    "Pour hériter de méthodes utiles comme getUser(), render(), redirect()",
-                    "C'est obligatoire",
-                    "Pour la performance"
+                    "C'est une erreur, il faut toujours persister",
+                    "Parce que l'entité existante est déjà gérée par Doctrine",
+                    "Pour économiser de la mémoire",
+                    "C'est une convention Symfony"
                 ],
                 correct: 1,
-                explanation: "AbstractController fournit de nombreuses méthodes pratiques pour les tâches courantes dans les contrôleurs."
+                explanation: "Une entité récupérée depuis la base de données est déjà gérée par Doctrine. persist() n'est nécessaire que pour les nouvelles entités."
+            },
+            {
+                question: "Quelle est l'incohérence dans le code pour définir la quantité?",
+                options: [
+                    "setQuantite() vs setQuantity()",
+                    "La quantité est négative",
+                    "Il n'y a pas d'incohérence",
+                    "La quantité n'est pas définie"
+                ],
+                correct: 0,
+                explanation: "Le code utilise setQuantite() dans le if mais setQuantity() dans le else. Il faut harmoniser le nom de la méthode."
             },
             {
                 question: "Que manque-t-il dans la méthode retirer()?",
@@ -518,15 +551,202 @@
                 explanation: "Doctrine utilise le pattern Unit of Work pour tracker les changements et optimiser les requêtes SQL."
             },
             {
-                question: "Quelle amélioration de sécurité devrait être ajoutée?",
+                question: "Quels sont les paramètres de addFlash()?",
                 options: [
-                    "Vérifier que l'utilisateur est connecté avant d'ajouter au panier",
-                    "Crypter les données",
-                    "Utiliser HTTPS",
+                    "Type et message",
+                    "Message uniquement",
+                    "Type, message et durée",
+                    "Message et couleur"
+                ],
+                correct: 0,
+                explanation: "addFlash() prend deux paramètres : le type (success, error, warning, info) et le message à afficher."
+            },
+            {
+                question: "Que représente PanierRepository dans l'injection de dépendances?",
+                options: [
+                    "Un contrôleur",
+                    "Une entité",
+                    "Un repository pour effectuer des requêtes sur l'entité Panier",
+                    "Un template"
+                ],
+                correct: 2,
+                explanation: "PanierRepository est un repository Doctrine qui permet d'effectuer des requêtes personnalisées sur l'entité Panier."
+            },
+            {
+                question: "Dans quel ordre doit-on configurer une nouvelle entité Panier?",
+                options: [
+                    "setProduit(), setUser(), setQuantite(), persist()",
+                    "persist(), setUser(), setProduit(), setQuantite()",
+                    "L'ordre n'a pas d'importance tant que persist() est avant flush()",
+                    "setQuantite() doit toujours être en premier"
+                ],
+                correct: 2,
+                explanation: "L'ordre des setters n'importe pas. L'important est que persist() soit appelé après avoir configuré l'entité et avant flush()."
+            },
+            {
+                question: "Que fait $request->headers->get('referer')?",
+                options: [
+                    "Récupère l'URL de la page précédente",
+                    "Définit une nouvelle URL",
+                    "Supprime l'historique",
+                    "Crée un cookie"
+                ],
+                correct: 0,
+                explanation: "L'en-tête HTTP 'referer' contient l'URL de la page d'où vient l'utilisateur, permettant de le rediriger vers cette page."
+            },
+            {
+                question: "Quand faut-il appeler persist() sur une entité?",
+                options: [
+                    "Toujours avant flush()",
+                    "Uniquement pour les nouvelles entités",
+                    "Uniquement pour les entités modifiées",
+                    "Jamais, c'est automatique"
+                ],
+                correct: 1,
+                explanation: "persist() n'est nécessaire que pour les nouvelles entités. Les entités récupérées de la base sont déjà suivies par Doctrine."
+            },
+            {
+                question: "Que se passe-t-il si getUser() retourne null?",
+                options: [
+                    "Symfony génère automatiquement un utilisateur",
+                    "Une erreur sera levée lors de l'association avec le panier",
+                    "Le panier est créé sans utilisateur",
+                    "La requête est annulée"
+                ],
+                correct: 1,
+                explanation: "Si l'utilisateur n'est pas connecté, getUser() retourne null et une erreur surviendra. Il faut vérifier l'authentification."
+            },
+            {
+                question: "Pourquoi utilise-t-on max(1, $request->query->get('quantite', 1))?",
+                options: [
+                    "Pour avoir une quantité maximale de 1",
+                    "Pour éviter les quantités négatives ou nulles",
+                    "Pour multiplier la quantité par 1",
+                    "C'est une erreur de code"
+                ],
+                correct: 1,
+                explanation: "max() garantit que la quantité sera au minimum 1, évitant ainsi d'ajouter 0 ou des quantités négatives au panier."
+            },
+            {
+                question: "Comment récupère-t-on un paramètre GET avec Symfony?",
+                options: [
+                    "$_GET['parametre']",
+                    "$request->get('parametre')",
+                    "$request->query->get('parametre')",
+                    "$this->getParameter('parametre')"
+                ],
+                correct: 2,
+                explanation: "$request->query donne accès aux paramètres GET, $request->request aux paramètres POST."
+            },
+            {
+                question: "Que fait la méthode findOneBy(['user' => $user, 'produit' => $produit])?",
+                options: [
+                    "Trouve toutes les lignes correspondantes",
+                    "Trouve la première ligne où user ET produit correspondent",
+                    "Trouve les lignes où user OU produit correspondent",
+                    "Crée une nouvelle ligne"
+                ],
+                correct: 1,
+                explanation: "findOneBy() avec un tableau associatif cherche UNE entité où TOUS les critères correspondent (condition AND)."
+            },
+            {
+                question: "Quelle amélioration de sécurité est essentielle pour la méthode ajouter()?",
+                options: [
+                    "Vérifier que l'utilisateur est authentifié",
+                    "Crypter l'ID du produit",
+                    "Limiter à un produit par commande",
                     "Ajouter un captcha"
                 ],
                 correct: 0,
-                explanation: "Il faut vérifier que getUser() ne retourne pas null et gérer le cas où l'utilisateur n'est pas authentifié."
+                explanation: "Il faut vérifier que getUser() ne retourne pas null avec $this->denyAccessUnlessGranted('IS_AUTHENTICATED') ou une vérification manuelle."
+            },
+            {
+                question: "Que permet l'autowiring de Symfony dans les paramètres de méthode?",
+                options: [
+                    "D'éviter les erreurs de syntaxe",
+                    "D'injecter automatiquement les services et entités nécessaires",
+                    "De sécuriser les paramètres",
+                    "De valider les données"
+                ],
+                correct: 1,
+                explanation: "L'autowiring analyse les types des paramètres et injecte automatiquement les services correspondants (EntityManager, Repository, etc.)."
+            },
+            {
+                question: "Pourquoi dump() est-il commenté dans le code?",
+                options: [
+                    "C'est une fonction obsolète",
+                    "Pour éviter l'affichage en production",
+                    "Ça génère des erreurs",
+                    "C'est inutile"
+                ],
+                correct: 1,
+                explanation: "dump() est utile en développement pour déboguer, mais doit être retiré ou commenté en production pour ne pas afficher d'informations sensibles."
+            },
+            {
+                question: "Quelle est la différence entre persist() et flush()?",
+                options: [
+                    "Aucune différence",
+                    "persist() marque l'entité, flush() exécute les requêtes SQL",
+                    "persist() pour INSERT, flush() pour UPDATE",
+                    "persist() est plus rapide"
+                ],
+                correct: 1,
+                explanation: "persist() indique à Doctrine de gérer l'entité, flush() synchronise tous les changements avec la base de données en une transaction."
+            },
+            {
+                question: "Comment implémenter correctement la méthode vider()?",
+                options: [
+                    "$repo->deleteAll()",
+                    "$repo->findBy(['user' => $user]) puis remove() sur chaque ligne",
+                    "$em->clear()",
+                    "$this->clearCart()"
+                ],
+                correct: 1,
+                explanation: "Il faut récupérer toutes les lignes du panier de l'utilisateur avec findBy(), puis appeler remove() sur chacune et flush()."
+            },
+            {
+                question: "Quel pattern suit Doctrine ORM?",
+                options: [
+                    "MVC uniquement",
+                    "Data Mapper et Unit of Work",
+                    "Active Record",
+                    "Singleton"
+                ],
+                correct: 1,
+                explanation: "Doctrine utilise Data Mapper pour séparer la logique métier de la persistance, et Unit of Work pour optimiser les requêtes."
+            },
+            {
+                question: "Que devrait retourner la méthode ajouter() en cas d'erreur?",
+                options: [
+                    "Une exception",
+                    "Une Response avec un code d'erreur HTTP approprié",
+                    "null",
+                    "false"
+                ],
+                correct: 1,
+                explanation: "En cas d'erreur (utilisateur non connecté, produit invalide), on devrait retourner une Response avec un code HTTP 401, 403 ou 404 selon le cas."
+            },
+            {
+                question: "Quelle est la meilleure pratique pour les messages flash?",
+                options: [
+                    "Un seul type 'message'",
+                    "Utiliser des types distincts: success, error, warning, info",
+                    "Ne pas utiliser de messages flash",
+                    "Les stocker en base de données"
+                ],
+                correct: 1,
+                explanation: "Utiliser des types distincts permet d'adapter le style d'affichage (couleur, icône) selon le type de message dans le template Twig."
+            },
+            {
+                question: "Comment améliorer la méthode ajouter() pour l'API REST?",
+                options: [
+                    "Retourner une JsonResponse au lieu d'une redirection",
+                    "Ajouter plus de paramètres",
+                    "Utiliser POST au lieu de GET",
+                    "Les deux: JsonResponse et POST"
+                ],
+                correct: 3,
+                explanation: "Pour une API REST, il faut utiliser POST pour les modifications et retourner une JsonResponse avec le statut et les données du panier."
             }
         ];
 
