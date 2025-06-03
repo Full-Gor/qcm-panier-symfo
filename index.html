@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QCM Symfony - Gestion du Panier</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #48bb78;
+            --danger: #f56565;
+            --dark: #2d3748;
+            --light: #f7fafc;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 255, 255, 0.3); }
+            to { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2), 0 0 30px rgba(255, 255, 255, 0.5); }
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(72, 187, 120, 0.5);
+        }
+
+        .question-container {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .question-container.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .question {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+
+        .question:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .question h3 {
+            color: var(--dark);
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .options {
+            display: grid;
+            gap: 15px;
+        }
+
+        .option {
+            padding: 15px 20px;
+            background: var(--light);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .option:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .option:hover {
+            transform: translateX(10px);
+            border-color: var(--primary);
+            background: white;
+        }
+
+        .option.correct {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+            animation: pulse 0.5s ease;
+        }
+
+        .option.incorrect {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .explanation {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 4px solid var(--primary);
+            border-radius: 10px;
+            display: none;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 200px;
+            }
+        }
+
+        .explanation.show {
+            display: block;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: white;
+            color: var(--primary);
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .score {
+            font-size: 3em;
+            color: white;
+            margin: 20px 0;
+            animation: bounceIn 1s ease;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .score-message {
+            font-size: 1.5em;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .restart-btn {
+            background: white;
+            color: var(--primary);
+            padding: 15px 40px;
+            font-size: 18px;
+        }
+
+        .question-number {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 QCM Symfony - Gestion du Panier</h1>
+        
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+
+        <div class="question-number" id="questionNumber"></div>
+
+        <div id="quiz">
+            <!-- Questions will be inserted here -->
+        </div>
+
+        <div class="results" id="results">
+            <h2>🎉 Quiz Terminé!</h2>
+            <div class="score" id="score"></div>
+            <div class="score-message" id="scoreMessage"></div>
+            <button class="restart-btn" onclick="restartQuiz()">Recommencer</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "Quelle annotation Symfony est utilisée pour définir une route?",
+                options: ["@Route", "#[Route]", "Route()", "->route()"],
+                correct: 1,
+                explanation: "Depuis PHP 8, Symfony utilise les attributs PHP avec la syntaxe #[Route]. L'ancienne syntaxe @Route est dépréciée."
+            },
+            {
+                question: "Que fait la méthode getUser() dans un contrôleur Symfony?",
+                options: [
+                    "Crée un nouvel utilisateur",
+                    "Récupère l'utilisateur actuellement connecté",
+                    "Supprime l'utilisateur",
+                    "Met à jour l'utilisateur"
+                ],
+                correct: 1,
+                explanation: "getUser() est une méthode héritée d'AbstractController qui retourne l'utilisateur actuellement authentifié ou null."
+            },
+            {
+                question: "Quel est le rôle d'EntityManagerInterface?",
+                options: [
+                    "Gérer les templates Twig",
+                    "Gérer les routes",
+                    "Gérer la persistance des entités en base de données",
+                    "Gérer les sessions utilisateur"
+                ],
+                correct: 2,
+                explanation: "EntityManagerInterface est l'interface principale de Doctrine pour gérer le cycle de vie des entités (INSERT, UPDATE, DELETE, SELECT)."
+            },
+            {
+                question: "Que fait la méthode persist() de l'EntityManager?",
+                options: [
+                    "Exécute immédiatement la requête SQL",
+                    "Indique à Doctrine qu'une entité doit être sauvegardée",
+                    "Supprime une entité",
+                    "Rafraîchit une entité"
+                ],
+                correct: 1,
+                explanation: "persist() indique à Doctrine qu'une entité doit être gérée et sauvegardée lors du prochain flush()."
+            },
+            {
+                question: "Quelle méthode exécute réellement les requêtes SQL en base de données?",
+                options: ["persist()", "save()", "flush()", "commit()"],
+                correct: 2,
+                explanation: "flush() synchronise l'état des entités gérées avec la base de données en exécutant les requêtes SQL nécessaires."
+            },
+            {
+                question: "Que fait la méthode findOneBy() d'un repository?",
+                options: [
+                    "Trouve toutes les entités",
+                    "Trouve une seule entité selon des critères",
+                    "Compte les entités",
+                    "Supprime une entité"
+                ],
+                correct: 1,
+                explanation: "findOneBy() recherche et retourne une seule entité correspondant aux critères passés en paramètre sous forme de tableau associatif."
+            },
+            {
+                question: "Dans le code, que fait max(1, $request->query->get('quantite', 1))?",
+                options: [
+                    "Retourne toujours 1",
+                    "Retourne la valeur maximale entre 1 et la quantité demandée",
+                    "Retourne la quantité multipliée par 1",
+                    "Retourne une erreur"
+                ],
+                correct: 1,
+                explanation: "Cette expression garantit que la quantité sera au minimum 1, évitant ainsi des quantités négatives ou nulles."
+            },
+            {
+                question: "Que représente le paramètre {id} dans la route '/panier/ajouter/{id}'?",
+                options: [
+                    "L'ID de l'utilisateur",
+                    "L'ID du panier",
+                    "L'ID du produit à ajouter",
+                    "Un ID aléatoire"
+                ],
+                correct: 2,
+                explanation: "Le paramètre {id} est automatiquement mappé au produit grâce au ParamConverter de Symfony."
+            },
+            {
+                question: "Quelle est l'erreur dans return $this->redirect($request->headers->get('refer'))?",
+                options: [
+                    "redirect() n'existe pas",
+                    "headers n'existe pas",
+                    "'refer' devrait être 'referer'",
+                    "Il n'y a pas d'erreur"
+                ],
+                correct: 2,
+                explanation: "L'en-tête HTTP correct est 'referer' (avec deux 'e'). C'est une faute d'orthographe historique dans le protocole HTTP."
+            },
+            {
+                question: "Que fait $request->query->get('quantite', 1)?",
+                options: [
+                    "Récupère la quantité depuis l'URL avec 1 comme valeur par défaut",
+                    "Définit la quantité à 1",
+                    "Supprime le paramètre quantité",
+                    "Vérifie si quantité existe"
+                ],
+                correct: 0,
+                explanation: "$request->query accède aux paramètres GET de l'URL. Le second paramètre (1) est la valeur par défaut."
+            },
+            {
+                question: "Pourquoi utilise-t-on AbstractController?",
+                options: [
+                    "Pour la décoration",
+                    "Pour hériter de méthodes utiles comme getUser(), render(), redirect()",
+                    "C'est obligatoire",
+                    "Pour la performance"
+                ],
+                correct: 1,
+                explanation: "AbstractController fournit de nombreuses méthodes pratiques pour les tâches courantes dans les contrôleurs."
+            },
+            {
+                question: "Que manque-t-il dans la méthode retirer()?",
+                options: [
+                    "Les paramètres et la logique de suppression",
+                    "L'annotation Route",
+                    "Le return",
+                    "Rien, elle est complète"
+                ],
+                correct: 0,
+                explanation: "La méthode retirer() devrait recevoir le produit, trouver la ligne de panier, décrémenter ou supprimer, puis flush()."
+            },
+            {
+                question: "Quel type d'injection de dépendances est utilisé dans la méthode ajouter()?",
+                options: [
+                    "Injection par constructeur",
+                    "Injection par setter",
+                    "Injection par paramètres de méthode (autowiring)",
+                    "Pas d'injection"
+                ],
+                correct: 2,
+                explanation: "Symfony utilise l'autowiring pour injecter automatiquement les dépendances dans les paramètres des méthodes des contrôleurs."
+            },
+            {
+                question: "Que représente l'entité Produit dans le contexte?",
+                options: [
+                    "Un service",
+                    "Un contrôleur",
+                    "Une classe mappée à une table de base de données",
+                    "Un template"
+                ],
+                correct: 2,
+                explanation: "Les entités Doctrine sont des classes PHP qui représentent des tables de base de données."
+            },
+            {
+                question: "Quelle méthode HTTP est utilisée pour accéder à /panier/ajouter/{id}?",
+                options: [
+                    "POST uniquement",
+                    "GET par défaut, mais peut être configuré",
+                    "PUT",
+                    "DELETE"
+                ],
+                correct: 1,
+                explanation: "Sans spécification dans #[Route], toutes les méthodes HTTP sont acceptées. Il est recommandé de spécifier methods: ['POST']."
+            },
+            {
+                question: "Que devrait faire la méthode vider()?",
+                options: [
+                    "Supprimer tous les produits de la base",
+                    "Supprimer toutes les lignes de panier de l'utilisateur connecté",
+                    "Déconnecter l'utilisateur",
+                    "Vider le cache"
+                ],
+                correct: 1,
+                explanation: "La méthode vider() devrait utiliser le repository pour trouver et supprimer toutes les lignes de panier de l'utilisateur actuel."
+            },
+            {
+                question: "Pourquoi utilise-t-on un Repository?",
+                options: [
+                    "Pour stocker des fichiers",
+                    "Pour encapsuler la logique de requêtes à la base de données",
+                    "Pour gérer les vues",
+                    "Pour gérer les routes"
+                ],
+                correct: 1,
+                explanation: "Les Repositories suivent le pattern Repository et centralisent toutes les requêtes personnalisées pour une entité."
+            },
+            {
+                question: "Que se passe-t-il si $ligne existe déjà dans la méthode ajouter()?",
+                options: [
+                    "Une erreur est levée",
+                    "La quantité est incrémentée",
+                    "Le produit est remplacé",
+                    "Rien ne se passe"
+                ],
+                correct: 1,
+                explanation: "Si une ligne existe déjà pour ce produit et cet utilisateur, la quantité est augmentée au lieu de créer une nouvelle ligne."
+            },
+            {
+                question: "Quel pattern de conception est utilisé avec EntityManager?",
+                options: [
+                    "Singleton",
+                    "Factory",
+                    "Unit of Work",
+                    "Observer"
+                ],
+                correct: 2,
+                explanation: "Doctrine utilise le pattern Unit of Work pour tracker les changements et optimiser les requêtes SQL."
+            },
+            {
+                question: "Quelle amélioration de sécurité devrait être ajoutée?",
+                options: [
+                    "Vérifier que l'utilisateur est connecté avant d'ajouter au panier",
+                    "Crypter les données",
+                    "Utiliser HTTPS",
+                    "Ajouter un captcha"
+                ],
+                correct: 0,
+                explanation: "Il faut vérifier que getUser() ne retourne pas null et gérer le cas où l'utilisateur n'est pas authentifié."
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let answers = [];
+
+        function initQuiz() {
+            const quizContainer = document.getElementById('quiz');
+            quizContainer.innerHTML = '';
+            
+            questions.forEach((q, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = `question-container ${index === 0 ? 'active' : ''}`;
+                questionDiv.id = `question-${index}`;
+                
+                questionDiv.innerHTML = `
+                    <div class="question">
+                        <h3>${q.question}</h3>
+                        <div class="options">
+                            ${q.options.map((option, optIndex) => `
+                                <div class="option" onclick="selectAnswer(${index}, ${optIndex})">
+                                    ${option}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="explanation" id="explanation-${index}">
+                            <strong>💡 Explication:</strong> ${q.explanation}
+                        </div>
+                    </div>
+                `;
+                
+                quizContainer.appendChild(questionDiv);
+            });
+            
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.className = 'buttons';
+            buttonsDiv.innerHTML = `
+                <button id="prevBtn" onclick="previousQuestion()" disabled>Précédent</button>
+                <button id="nextBtn" onclick="nextQuestion()" disabled>Suivant</button>
+            `;
+            quizContainer.appendChild(buttonsDiv);
+            
+            updateProgress();
+            updateQuestionNumber();
+        }
+
+        function selectAnswer(questionIndex, optionIndex) {
+            if (answers[questionIndex] !== undefined) return;
+            
+            answers[questionIndex] = optionIndex;
+            const options = document.querySelectorAll(`#question-${questionIndex} .option`);
+            const explanation = document.getElementById(`explanation-${questionIndex}`);
+            
+            options.forEach((option, index) => {
+                option.style.pointerEvents = 'none';
+                if (index === questions[questionIndex].correct) {
+                    option.classList.add('correct');
+                } else if (index === optionIndex) {
+                    option.classList.add('incorrect');
+                }
+            });
+            
+            if (optionIndex === questions[questionIndex].correct) {
+                score++;
+            }
+            
+            explanation.classList.add('show');
+            document.getElementById('nextBtn').disabled = false;
+            
+            if (currentQuestion === questions.length - 1) {
+                document.getElementById('nextBtn').textContent = 'Voir les résultats';
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < questions.length - 1) {
+                document.getElementById(`question-${currentQuestion}`).classList.remove('active');
+                currentQuestion++;
+                document.getElementById(`question-${currentQuestion}`).classList.add('active');
+                updateProgress();
+                updateQuestionNumber();
+                updateButtons();
+            } else {
+                showResults();
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestion > 0) {
+                document.getElementById(`question-${currentQuestion}`).classList.remove('active');
+                currentQuestion--;
+                document.getElementById(`question-${currentQuestion}`).classList.add('active');
+                updateProgress();
+                updateQuestionNumber();
+                updateButtons();
+            }
+        }
+
+        function updateButtons() {
+            document.getElementById('prevBtn').disabled = currentQuestion === 0;
+            document.getElementById('nextBtn').disabled = answers[currentQuestion] === undefined;
+            document.getElementById('nextBtn').textContent = 
+                currentQuestion === questions.length - 1 ? 'Voir les résultats' : 'Suivant';
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestion + 1) / questions.length) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+        }
+
+        function updateQuestionNumber() {
+            document.getElementById('questionNumber').textContent = 
+                `Question ${currentQuestion + 1} sur ${questions.length}`;
+        }
+
+        function showResults() {
+            document.getElementById('quiz').style.display = 'none';
+            document.getElementById('results').classList.add('show');
+            
+            const percentage = Math.round((score / questions.length) * 100);
+            document.getElementById('score').textContent = `${score}/${questions.length}`;
+            
+            let message = '';
+            if (percentage >= 90) {
+                message = '🏆 Excellent! Vous maîtrisez parfaitement Symfony!';
+            } else if (percentage >= 70) {
+                message = '👏 Très bien! Vous avez de bonnes connaissances!';
+            } else if (percentage >= 50) {
+                message = '💪 Pas mal! Continuez à pratiquer!';
+            } else {
+                message = '📚 Il faut réviser un peu plus les concepts Symfony!';
+            }
+            
+            document.getElementById('scoreMessage').textContent = message;
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            answers = [];
+            document.getElementById('quiz').style.display = 'block';
+            document.getElementById('results').classList.remove('show');
+            initQuiz();
+        }
+
+        // Initialize quiz on page load
+        initQuiz();
+    </script>
+</body>
+</html>
