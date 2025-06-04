@@ -19,6 +19,8 @@
             --dark: #2d3748;
             --light: #f7fafc;
             --glass: rgba(255, 255, 255, 0.1);
+            --warning: #f6ad55;
+            --info: #4299e1;
         }
 
         body {
@@ -67,6 +69,26 @@
         @keyframes glow {
             from { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 255, 255, 0.3); }
             to { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2), 0 0 30px rgba(255, 255, 255, 0.5); }
+        }
+
+        .subtitle {
+            text-align: center;
+            color: white;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .timer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
         }
 
         .progress-bar {
@@ -284,12 +306,60 @@
             font-size: 1.2em;
         }
 
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-            }
-            h1 {
-                font-size: 2em;
+        .score-breakdown {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            color: white;
+        }
+
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .difficulty-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .difficulty-easy {
+            background: var(--success);
+            color: white;
+        }
+
+        .difficulty-medium {
+            background: var(--warning);
+            color: white;
+        }
+
+        .difficulty-hard {
+            background: var(--danger);
+            color: white;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #f0f;
+            position: absolute;
+            animation: confetti-fall 3s linear forwards;
+        }
+
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
             }
         }
     </style>
@@ -297,6 +367,8 @@
 <body>
     <div class="container">
         <h1>🎯 QCM Symfony - Gestion du Panier</h1>
+        <div class="subtitle">40 questions pour maîtriser Symfony et Doctrine</div>
+        <div class="timer" id="timer">00:00</div>
         
         <div class="progress-bar">
             <div class="progress" id="progress"></div>
@@ -312,6 +384,21 @@
             <h2>🎉 Quiz Terminé!</h2>
             <div class="score" id="score"></div>
             <div class="score-message" id="scoreMessage"></div>
+            <div class="score-breakdown">
+                <h3>📊 Détails de votre performance</h3>
+                <div class="score-item">
+                    <span>✅ Réponses correctes</span>
+                    <span id="correctAnswers"></span>
+                </div>
+                <div class="score-item">
+                    <span>❌ Réponses incorrectes</span>
+                    <span id="incorrectAnswers"></span>
+                </div>
+                <div class="score-item">
+                    <span>⏱️ Temps total</span>
+                    <span id="totalTime"></span>
+                </div>
+            </div>
             <button class="restart-btn" onclick="restartQuiz()">Recommencer</button>
         </div>
     </div>
@@ -753,6 +840,36 @@
         let currentQuestion = 0;
         let score = 0;
         let answers = [];
+        let startTime = Date.now();
+        let timerInterval;
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('timer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
 
         function initQuiz() {
             const quizContainer = document.getElementById('quiz');
@@ -864,15 +981,25 @@
         }
 
         function showResults() {
+            stopTimer();
             document.getElementById('quiz').style.display = 'none';
             document.getElementById('results').classList.add('show');
             
             const percentage = Math.round((score / questions.length) * 100);
             document.getElementById('score').textContent = `${score}/${questions.length}`;
+            document.getElementById('correctAnswers').textContent = score;
+            document.getElementById('incorrectAnswers').textContent = questions.length - score;
+            
+            const totalSeconds = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            document.getElementById('totalTime').textContent = 
+                `${minutes}m ${seconds}s`;
             
             let message = '';
             if (percentage >= 90) {
                 message = '🏆 Excellent! Vous maîtrisez parfaitement Symfony!';
+                createConfetti();
             } else if (percentage >= 70) {
                 message = '👏 Très bien! Vous avez de bonnes connaissances!';
             } else if (percentage >= 50) {
@@ -888,13 +1015,16 @@
             currentQuestion = 0;
             score = 0;
             answers = [];
+            startTime = Date.now();
             document.getElementById('quiz').style.display = 'block';
             document.getElementById('results').classList.remove('show');
             initQuiz();
+            startTimer();
         }
 
         // Initialize quiz on page load
         initQuiz();
+        startTimer();
     </script>
 </body>
 </html>
